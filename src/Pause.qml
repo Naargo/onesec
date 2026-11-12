@@ -19,9 +19,8 @@ Window {
     property string cue: ""
     property bool choosing: false
 
-    readonly property int inhaleMs: 4000
-    readonly property int holdMs: 1200
-    readonly property int exhaleMs: 5000
+    readonly property int inhaleMs: 10000
+    readonly property int exhaleMs: 10000
     readonly property real low: 0.12
     readonly property real high: 0.80
 
@@ -173,8 +172,9 @@ Window {
         }
     }
 
-    // One breath at a time: in, hold, out. Built as a chain rather than one
-    // long animation so the number of breaths can come from the settings.
+    // One breath at a time: ten seconds in, ten seconds out. Built as a chain
+    // rather than one long animation so the number of breaths can come from
+    // the settings.
     property int breathsLeft: 0
     function breathe(count) {
         breathsLeft = count
@@ -194,8 +194,6 @@ Window {
         id: breath
         ScriptAction { script: root.cue = qsTr("Breathe in") }
         NumberAnimation { target: root; property: "level"; to: root.high; duration: root.inhaleMs; easing.type: Easing.InOutSine }
-        ScriptAction { script: root.cue = qsTr("Hold") }
-        PauseAnimation { duration: root.holdMs }
         ScriptAction { script: root.cue = qsTr("Breathe out") }
         NumberAnimation { target: root; property: "level"; to: root.low; duration: root.exhaleMs; easing.type: Easing.InOutSine }
         onFinished: root.nextBreath()
