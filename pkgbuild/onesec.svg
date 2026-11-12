@@ -1,14 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <radialGradient id="body" cx="32" cy="38" r="30" fx="32" fy="10" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#6f8ff0"/>
-      <stop offset="0.35" stop-color="#2a4aa8"/>
-      <stop offset="1" stop-color="#0a1640"/>
-    </radialGradient>
-  </defs>
-  <rect width="64" height="64" rx="12" fill="#03060f"/>
-  <clipPath id="tile"><rect width="64" height="64" rx="12"/></clipPath>
-  <g clip-path="url(#tile)">
-    <circle cx="32" cy="72" r="44" fill="url(#body)" stroke="#8aa6f5" stroke-width="1.2"/>
-  </g>
+  <!-- OneSec: a circle half full, like the breathing sheet halfway up.
+       Monochrome: one dark disc, everything else white. -->
+  <circle cx="32" cy="32" r="31" fill="#111216"/>
+  <circle cx="32" cy="32" r="19" fill="none" stroke="#ffffff" stroke-width="3.5"/>
+  <path d="M 13 32 L 51 32 A 19 19 0 0 1 13 32 Z" fill="#ffffff"/>
 </svg>
