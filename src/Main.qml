@@ -159,7 +159,6 @@ ApplicationWindow {
                         Layout.preferredHeight: 26
                         sourceSize: Qt.size(52, 52)
                         source: row.modelData.icon ? "image://icon/" + encodeURIComponent(row.modelData.icon) : ""
-                        asynchronous: true
                         fillMode: Image.PreserveAspectFit
                     }
                     Label {

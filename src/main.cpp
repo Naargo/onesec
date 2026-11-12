@@ -27,10 +27,12 @@
 #include "theme.h"
 #include "translator.h"
 
-static const char *Version = "0.1.1";
+static const char *Version = "0.1.2";
 
 // App icons by the name in their .desktop file, from the icon theme, or by
-// path for the web apps that point at their own PNG.
+// path for the web apps that point at their own PNG. Qt's icon theme lookup
+// isn't thread-safe, so the Images using this must not be asynchronous:
+// loading several at once on Qt's worker threads crashed in QIconLoader.
 class IconProvider : public QQuickImageProvider {
 public:
     IconProvider() : QQuickImageProvider(QQuickImageProvider::Pixmap) {}

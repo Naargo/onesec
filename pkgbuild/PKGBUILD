@@ -1,5 +1,5 @@
 pkgname=onesec
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc='A breathing pause in front of the apps you pick'
 arch=('x86_64' 'aarch64')
