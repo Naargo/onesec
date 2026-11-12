@@ -1,0 +1,107 @@
+#!/usr/bin/python3 -I
+"""Native messaging host for the OneSec browser extension.
+
+The extension keeps one connection open to this helper for as long as the
+browser runs. Messages go both ways over stdin/stdout: a 4-byte
+little-endian length, then UTF-8 JSON.
+
+To the extension:
+  {"type": "settings", "enabled", "sites", "graceMinutes"}
+      at the start, and again whenever OneSec's settings change
+  {"type": "answer", "id", "go"}
+      when a pause is answered: go is false if the tabs should close
+
+From the extension:
+  {"type": "pause", "id", "sites": [...], "open": bool}
+      run OneSec's pause for these websites; open when their tabs were
+      already open as OneSec came on
+"""
+
+import json
+import os
+import re
+import struct
+import subprocess
+import sys
+import threading
+import time
+from pathlib import Path
+
+CONFIG = Path.home() / ".config" / "onesec" / "config.json"
+ONESEC = os.environ.get("ONESEC_COMMAND", "onesec")
+SITE = re.compile(r"^[a-z0-9-]+(\.[a-z0-9-]+)+$")
+STOPPED = 3  # onesec pause --site exits with this when the tabs should close
+
+write_lock = threading.Lock()
+
+
+def send(message):
+    data = json.dumps(message).encode()
+    with write_lock:
+        sys.stdout.buffer.write(struct.pack("<I", len(data)) + data)
+        sys.stdout.buffer.flush()
+
+
+def read_message():
+    header = sys.stdin.buffer.read(4)
+    if len(header) < 4:
+        return None
+    (length,) = struct.unpack("<I", header)
+    if length > 1024 * 1024:
+        return None
+    return json.loads(sys.stdin.buffer.read(length) or b"null")
+
+
+def settings():
+    try:
+        config = json.loads(CONFIG.read_text())
+    except (OSError, ValueError):
+        config = {}
+    sites = [s for s in config.get("sites", []) if isinstance(s, str) and SITE.match(s)]
+    grace = config.get("graceMinutes", 5)
+    return {
+        "type": "settings",
+        "enabled": config.get("enabled") is True,
+        "sites": sites,
+        "graceMinutes": grace if isinstance(grace, int) and 0 <= grace <= 60 else 5,
+    }
+
+
+def watch_settings():
+    """Sends the settings again whenever OneSec saves them. OneSec writes the
+    file by renaming a new one over it, so watch what it says, not the inode."""
+    last = settings()
+    send(last)
+    while True:
+        time.sleep(1)
+        current = settings()
+        if current != last:
+            last = current
+            send(current)
+
+
+def pause(message):
+    sites = [s for s in message.get("sites", []) if isinstance(s, str) and SITE.match(s)]
+    go = True
+    if sites:
+        command = [ONESEC, "pause", "--site"] + (["--open"] if message.get("open") else []) + sites
+        try:
+            go = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL).returncode != STOPPED
+        except OSError:
+            go = True  # no OneSec to ask: let the page through
+    send({"type": "answer", "id": message.get("id"), "go": go})
+
+
+def main():
+    threading.Thread(target=watch_settings, daemon=True).start()
+    while True:
+        message = read_message()
+        if message is None:
+            return  # the browser closed the connection
+        if isinstance(message, dict) and message.get("type") == "pause":
+            threading.Thread(target=pause, args=(message,), daemon=True).start()
+
+
+if __name__ == "__main__":
+    main()

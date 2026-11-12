@@ -14,9 +14,10 @@ QString Pause::joinNames(const QStringList &names) {
     return tr("%1 and %2").arg(names.mid(0, names.size() - 1).join(", "), names.last());
 }
 
-Pause::Pause(Config &config, const QStringList &windowClasses, Kind kind, QObject *parent)
+Pause::Pause(Config &config, const QStringList &windowClasses, Kind kind, bool forSites, QObject *parent)
     : QObject(parent),
       m_windowClasses(windowClasses),
+      m_forSites(forSites),
       m_phrase(config.phrase()),
       m_breaths(config.breaths()),
       m_kind(kind) {
@@ -46,7 +47,9 @@ void Pause::finish(const QString &function) {
     if (m_done)
         return;
     m_done = true;
-    if (m_kind != Preview) {
+    if (m_forSites) {
+        m_result = function == "onesec_dismiss" ? Stopped : 0;
+    } else if (m_kind != Preview) {
         QStringList arguments;
         for (const auto &windowClass : m_windowClasses)
             arguments.append(luaQuote(windowClass));

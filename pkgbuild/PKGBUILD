@@ -1,10 +1,11 @@
 pkgname=onesec
-pkgver=0.3.2
+pkgver=0.4.0
 pkgrel=1
 pkgdesc='A breathing pause in front of the apps you pick'
 arch=('x86_64' 'aarch64')
 license=('MIT')
-depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'layer-shell-qt' 'hyprland' 'libnotify')
+depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'layer-shell-qt' 'hyprland' 'libnotify' 'python')
+optdepends=('brave-bin: the OneSec extension for websites' 'chromium: the OneSec extension for websites')
 makedepends=('gcc' 'make')
 source=()
 sha256sums=()
@@ -25,4 +26,9 @@ package() {
   # The bar widget. Each user links it into ~/.config/omarchy/plugins.
   install -Dm644 -t "$pkgdir/usr/share/onesec/plugin" plugin/manifest.json plugin/OneSecBar.qml
   install -Dm644 -t "$pkgdir/usr/share/onesec/plugin/i18n" plugin/i18n/en.json
+  # The browser extension, the helper it talks to, and the command that
+  # turns both on for a user.
+  install -Dm644 -t "$pkgdir/usr/share/onesec/extension" extension/*
+  install -Dm755 browser/onesec-host "$pkgdir/usr/lib/onesec/onesec-host"
+  install -Dm755 browser/onesec-browser-setup "$pkgdir/usr/bin/onesec-browser-setup"
 }

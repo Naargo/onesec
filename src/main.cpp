@@ -3,6 +3,8 @@
 //   onesec                 open the settings
 //   onesec toggle [on|off] turn OneSec on or off (Super + `)
 //   onesec status          print "on" or "off"
+//   onesec site [list | add <site>... | remove <site>...]
+//                          the websites the browser extension pauses
 //   onesec pause [--open] <class>...
 //                          the pause, started by hypr/onesec.lua
 //   onesec preview         the pause as it will look, with nothing behind it
@@ -28,7 +30,7 @@
 #include "theme.h"
 #include "translator.h"
 
-static const char *Version = "0.3.2";
+static const char *Version = "0.4.0";
 
 // App icons by the name in their .desktop file, from the icon theme, or by
 // path for the web apps that point at their own PNG. Qt's icon theme lookup
@@ -100,6 +102,33 @@ static int toggle(int argc, char *argv[]) {
     return 0;
 }
 
+// onesec site add|remove|list: the websites the browser extension pauses.
+static int site(int argc, char *argv[]) {
+    QCoreApplication app(argc, argv);
+    const QString action = argc >= 3 ? QString::fromLocal8Bit(argv[2]) : QString("list");
+    Config config;
+    if (action == "list") {
+        for (const auto &site : config.sites())
+            fprintf(stdout, "%s\n", qPrintable(site));
+        return 0;
+    }
+    if ((action != "add" && action != "remove") || argc < 4) {
+        fprintf(stderr, "usage: onesec site [list | add <site>... | remove <site>...]\n");
+        return 1;
+    }
+    int failed = 0;
+    for (int i = 3; i < argc; ++i) {
+        const auto text = QString::fromLocal8Bit(argv[i]);
+        if (action == "add" && !config.addSite(text) && !config.sites().contains(Config::normalizeSite(text))) {
+            fprintf(stderr, "onesec: %s isn't a website\n", argv[i]);
+            ++failed;
+        } else if (action == "remove") {
+            config.removeSite(Config::normalizeSite(text));
+        }
+    }
+    return failed ? 1 : 0;
+}
+
 static int status(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
     qputenv("ONESEC_NO_HYPRLAND", "1");
@@ -125,14 +154,15 @@ static void grabWhenAsked(QQuickWindow *window) {
     QTimer::singleShot(last + 100, qApp, &QCoreApplication::quit);
 }
 
-static int runPause(QGuiApplication &app, Translator &translator, QStringList windowClasses, Pause::Kind kind) {
+static int runPause(QGuiApplication &app, Translator &translator, QStringList windowClasses, Pause::Kind kind,
+                    bool forSites) {
     Theme theme;
     Config config;
     if (kind == Pause::Preview && windowClasses.isEmpty()) {
         const auto classes = config.watchedClasses();
         windowClasses = {classes.isEmpty() ? QString("YouTube") : classes.first()};
     }
-    Pause pause(config, windowClasses, kind);
+    Pause pause(config, windowClasses, kind, forSites);
 
     QQmlApplicationEngine engine;
     QObject::connect(&translator, &Translator::changed, &engine, &QQmlEngine::retranslate);
@@ -160,7 +190,8 @@ static int runPause(QGuiApplication &app, Translator &translator, QStringList wi
     }
     window->show();
     grabWhenAsked(window);
-    return app.exec();
+    const int code = app.exec();
+    return forSites ? pause.result() : code;
 }
 
 int main(int argc, char *argv[]) {
@@ -170,26 +201,32 @@ int main(int argc, char *argv[]) {
         return toggle(argc, argv);
     if (command == "status")
         return status(argc, argv);
+    if (command == "site")
+        return site(argc, argv);
     if (command == "--version" || command == "version") {
         fprintf(stdout, "onesec %s\n", Version);
         return 0;
     }
     // onesec pause [--open] <class>...: --open when the windows were already
     // open as OneSec came on, rather than opening just now.
+    // With --site, the targets are websites (see Pause), and the exit code
+    // says what was chosen: 0 to go on, 3 to close the tabs.
     QStringList classes;
-    bool alreadyOpen = false;
+    bool alreadyOpen = false, forSites = false;
     for (int i = 2; i < argc; ++i) {
         if (std::strcmp(argv[i], "--open") == 0)
             alreadyOpen = true;
+        else if (std::strcmp(argv[i], "--site") == 0)
+            forSites = true;
         else
             classes.append(QString::fromLocal8Bit(argv[i]));
     }
     if (command == "pause" && classes.isEmpty()) {
-        fprintf(stderr, "usage: onesec pause [--open] <window-class>...\n");
+        fprintf(stderr, "usage: onesec pause [--open] [--site] <window-class-or-site>...\n");
         return 1;
     }
     if (command != "open" && command != "pause" && command != "preview") {
-        fprintf(stderr, "usage: onesec [open | toggle [on|off] | status | pause [--open] <class>... | preview]\n");
+        fprintf(stderr, "usage: onesec [open | toggle [on|off] | status | site ... | pause [--open] [--site] <target>... | preview]\n");
         return 1;
     }
 
@@ -208,7 +245,8 @@ int main(int argc, char *argv[]) {
 
     if (command == "pause" || command == "preview")
         return runPause(app, translator, classes,
-                        command == "preview" ? Pause::Preview : alreadyOpen ? Pause::AlreadyOpen : Pause::Opening);
+                        command == "preview" ? Pause::Preview : alreadyOpen ? Pause::AlreadyOpen : Pause::Opening,
+                        forSites);
 
     useDesktopIconTheme();
     app.setWindowIcon(QIcon::fromTheme("onesec"));

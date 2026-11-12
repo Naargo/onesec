@@ -130,6 +130,29 @@ private slots:
         QCOMPARE(Pause::joinNames({"A"}), QString("A"));
     }
 
+    void websitesAreBareDomains() {
+        QCOMPARE(Config::normalizeSite("https://www.YouTube.com/watch?v=1"), QString("youtube.com"));
+        QCOMPARE(Config::normalizeSite("old.reddit.com:443/r/x"), QString("old.reddit.com"));
+        QCOMPARE(Config::normalizeSite(" crazygames.io "), QString("crazygames.io"));
+        QCOMPARE(Config::normalizeSite("localhost"), QString());
+        QCOMPARE(Config::normalizeSite("not a site"), QString());
+        QCOMPARE(Config::normalizeSite("evil.com\"; rm -rf"), QString());
+    }
+
+    void websitesSurviveARestart() {
+        QTemporaryDir config, state;
+        {
+            Config c(config.path(), state.path());
+            QVERIFY(c.addSite("https://www.youtube.com/"));
+            QVERIFY(!c.addSite("youtube.com"));
+            QVERIFY(c.addSite("poki.com"));
+            QVERIFY(!c.addSite("nonsense"));
+            c.removeSite("poki.com");
+        }
+        Config c(config.path(), state.path());
+        QCOMPARE(c.sites(), QStringList({"youtube.com"}));
+    }
+
     void desktopFilesBecomeApps() {
         QTemporaryDir dir;
         write(dir.filePath("YouTube.desktop"),

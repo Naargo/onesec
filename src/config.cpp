@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
 
@@ -39,6 +40,12 @@ void Config::reload() {
         const auto object = QJsonDocument::fromJson(file.readAll()).object();
         m_enabled = object.value("enabled").toBool(false);
         m_apps = object.value("apps").toArray().toVariantList();
+        m_sites.clear();
+        for (const auto &site : object.value("sites").toArray()) {
+            const auto normal = normalizeSite(site.toString());
+            if (!normal.isEmpty() && !m_sites.contains(normal))
+                m_sites.append(normal);
+        }
         m_breaths = qBound(1, object.value("breaths").toInt(1), 5);
         m_phrase = object.value("phrase").toString().trimmed();
         if (m_phrase.isEmpty())
@@ -65,6 +72,7 @@ void Config::save() {
     QJsonObject object{
         {"enabled", m_enabled},
         {"apps", QJsonArray::fromVariantList(m_apps)},
+        {"sites", QJsonArray::fromStringList(m_sites)},
         {"breaths", m_breaths},
         {"phrase", m_phrase == defaultPhrase() ? QString() : m_phrase},
         {"graceMinutes", m_graceMinutes},
@@ -136,6 +144,32 @@ void Config::setWatched(const QVariantMap &app, bool watched) {
             }
     }
     save();
+}
+
+QString Config::normalizeSite(const QString &text) {
+    QString site = text.trimmed().toLower();
+    const int scheme = site.indexOf("://");
+    if (scheme >= 0)
+        site = site.mid(scheme + 3);
+    site = site.section('/', 0, 0).section('?', 0, 0).section('#', 0, 0).section(':', 0, 0);
+    if (site.startsWith("www."))
+        site = site.mid(4);
+    static const QRegularExpression domain(R"(^[a-z0-9-]+(\.[a-z0-9-]+)+$)");
+    return domain.match(site).hasMatch() ? site : QString();
+}
+
+bool Config::addSite(const QString &text) {
+    const auto site = normalizeSite(text);
+    if (site.isEmpty() || m_sites.contains(site))
+        return false;
+    m_sites.append(site);
+    save();
+    return true;
+}
+
+void Config::removeSite(const QString &site) {
+    if (m_sites.removeAll(site) > 0)
+        save();
 }
 
 QStringList Config::watchedClasses() const {

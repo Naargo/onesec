@@ -7,7 +7,8 @@ class Config;
 
 // One pause, in front of one or more apps. Their windows wait on a hidden
 // workspace (hypr/onesec.lua put them there) until the person chooses: going
-// on brings them back, not going on closes them. Usually the windows are
+// on brings them back, not going on closes them. Websites work the same way
+// through the browser extension. Usually the windows are
 // just opening; when OneSec is turned on they may be windows that were
 // already open. A preview has no windows behind it.
 class Pause : public QObject {
@@ -22,7 +23,14 @@ class Pause : public QObject {
 public:
     enum Kind { Opening, AlreadyOpen, Preview };
 
-    Pause(Config &config, const QStringList &windowClasses, Kind kind, QObject *parent = nullptr);
+    // With forSites, the targets are websites the browser extension is
+    // holding, not window classes: the choice comes back as the exit code
+    // (see result()) instead of going to Hyprland.
+    Pause(Config &config, const QStringList &targets, Kind kind, bool forSites = false, QObject *parent = nullptr);
+
+    // For websites: 0 to go on, Stopped to close the tabs.
+    static constexpr int Stopped = 3;
+    int result() const { return m_result; }
 
     QString appName() const { return m_appName; }
     QString phrase() const { return m_phrase; }
@@ -44,6 +52,8 @@ private:
     void finish(const QString &function);
 
     QStringList m_windowClasses;
+    bool m_forSites = false;
+    int m_result = 0;
     QString m_appName;
     QString m_phrase;
     int m_breaths = 1;

@@ -1,0 +1,61 @@
+#!/bin/bash
+# Connects the OneSec extension to Brave and Chromium for this user:
+# registers the helper the extension talks to, and loads the extension the
+# way Omarchy loads its own (the --load-extension line in <browser>-flags.conf).
+# Restart the browser afterwards. "--remove" undoes it.
+set -euo pipefail
+
+SHARE="${ONESEC_SHARE:-/usr/share/onesec}"
+HOST_PATH="${ONESEC_HOST:-/usr/lib/onesec/onesec-host}"
+EXTENSION="$SHARE/extension"
+NAME=com.onesec.omarchy
+ID=adafolcmmhknnmkgdpfhojeafcghemfc
+
+# Brave, Chromium and Chrome keep their per-user host manifests here.
+host_dirs=(
+  "$HOME/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts"
+  "$HOME/.config/chromium/NativeMessagingHosts"
+  "$HOME/.config/google-chrome/NativeMessagingHosts"
+)
+flag_files=("$HOME/.config/brave-flags.conf" "$HOME/.config/chromium-flags.conf")
+
+remove() {
+  for dir in "${host_dirs[@]}"; do rm -f "$dir/$NAME.json"; done
+  for file in "${flag_files[@]}"; do
+    [[ -f $file ]] && sed -i --follow-symlinks "s|,$EXTENSION||; s|^--load-extension=$EXTENSION$||" "$file"
+  done
+  echo "Removed the OneSec extension. Restart your browser."
+}
+
+install() {
+  for dir in "${host_dirs[@]}"; do
+    [[ -d $(dirname "$dir") ]] || continue # that browser isn't set up
+    mkdir -p "$dir"
+    cat >"$dir/$NAME.json" <<JSON
+{
+  "name": "$NAME",
+  "description": "OneSec browser extension helper",
+  "path": "$HOST_PATH",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://$ID/"]
+}
+JSON
+  done
+
+  for file in "${flag_files[@]}"; do
+    [[ -f $file ]] || continue
+    grep -qF "$EXTENSION" "$file" && continue
+    if grep -q '^--load-extension=' "$file"; then
+      sed -i --follow-symlinks "s|^--load-extension=\(.*\)$|--load-extension=\1,$EXTENSION|" "$file"
+    else
+      echo "--load-extension=$EXTENSION" >>"$file"
+    fi
+  done
+  echo "The OneSec extension is set up. Restart Brave or Chromium to load it."
+}
+
+case "${1:-}" in
+  --remove) remove ;;
+  "") install ;;
+  *) echo "usage: onesec-browser-setup [--remove]" >&2; exit 1 ;;
+esac

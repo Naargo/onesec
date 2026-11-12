@@ -15,6 +15,7 @@ class Config : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY changed)
     Q_PROPERTY(QVariantList apps READ apps NOTIFY changed)
+    Q_PROPERTY(QStringList sites READ sites NOTIFY changed)
     Q_PROPERTY(int breaths READ breaths WRITE setBreaths NOTIFY changed)
     Q_PROPERTY(QString phrase READ phrase WRITE setPhrase NOTIFY changed)
     Q_PROPERTY(int graceMinutes READ graceMinutes WRITE setGraceMinutes NOTIFY changed)
@@ -50,6 +51,16 @@ public:
     // Hyprland hook matches; the id is the .desktop file it came from.
     Q_INVOKABLE bool isWatched(const QString &id) const;
     Q_INVOKABLE void setWatched(const QVariantMap &app, bool watched);
+
+    // Websites get the pause too, through the browser extension. Each is a
+    // bare domain ("youtube.com") that also covers its subdomains.
+    QStringList sites() const { return m_sites; }
+    // "https://www.YouTube.com/watch?v=1" -> "youtube.com"; empty if it
+    // isn't a usable domain.
+    static QString normalizeSite(const QString &text);
+    // False when the text isn't a domain or the site is already there.
+    Q_INVOKABLE bool addSite(const QString &text);
+    Q_INVOKABLE void removeSite(const QString &site);
 
     // Every window class the hook should hold back, without duplicates.
     QStringList watchedClasses() const;
@@ -88,6 +99,7 @@ private:
     QString m_stateDirectory;
     bool m_enabled = false;
     QVariantList m_apps;
+    QStringList m_sites;
     int m_breaths = 1;
     QString m_phrase;
     int m_graceMinutes = 5;

@@ -1,0 +1,14 @@
+/* Where a tab waits while OneSec's pause is on screen: the pause's own black,
+   with the website's name, quietly. */
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #05070d;
+  color: #5d6c99;
+  font: 15px system-ui, sans-serif;
+}
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

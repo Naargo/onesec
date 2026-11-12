@@ -41,6 +41,23 @@ omarchy bar put tom.onesec --after omarchy.tray
 
 Open OneSec from the app launcher (Super + Space) to pick your apps.
 
+## Websites
+
+OneSec pauses websites too, through an extension for Brave or Chromium. Add
+the websites in OneSec's settings, or with `onesec site add youtube.com`; each
+covers its subdomains. Then turn the extension on and restart the browser:
+
+```sh
+onesec-browser-setup        # --remove undoes it
+```
+
+While OneSec is on, a tab heading to one of those websites waits on a blank
+page while the same full-screen pause runs. Going on loads the page; not
+going on closes the tab. Turning OneSec on also pauses the tabs already open
+on them, behind one pause for all. The extension talks to a small helper
+(`/usr/lib/onesec/onesec-host`), which reads OneSec's settings and runs the
+pause. If the helper is missing, nothing is held.
+
 ## Commands
 
 | Command | What it does |
@@ -48,8 +65,9 @@ Open OneSec from the app launcher (Super + Space) to pick your apps.
 | `onesec` | The settings: on or off, apps, the words on screen, breaths, and how long after going on you won't be paused again |
 | `onesec toggle [on\|off]` | Turn OneSec on or off, with a notification |
 | `onesec status` | Print `on` or `off` |
+| `onesec site [list \| add <site>... \| remove <site>...]` | The websites the extension pauses |
 | `onesec preview` | Show the pause as it will look |
-| `onesec pause [--open] <class>...` | The pause itself; the Hyprland hook starts it |
+| `onesec pause [--open] [--site] <target>...` | The pause itself; the Hyprland hook and the browser helper start it |
 
 ## Shortcuts
 

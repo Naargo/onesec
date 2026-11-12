@@ -8,7 +8,7 @@ import QtQuick.Layouts
 ApplicationWindow {
     id: window
     width: 620
-    height: 860
+    height: 900
     minimumWidth: 460
     minimumHeight: 520
     visible: true
@@ -174,6 +174,70 @@ ApplicationWindow {
                     }
                 }
             }
+        }
+
+        Rectangle { Layout.fillWidth: true; height: 1; color: "#262833" }
+
+        // Websites, paused the same way through the browser extension.
+        Label {
+            text: qsTr("Websites")
+            font.pixelSize: 17
+            font.weight: Font.DemiBold
+        }
+
+        Flow {
+            Layout.fillWidth: true
+            spacing: 8
+            visible: config.sites.length > 0
+
+            Repeater {
+                model: config.sites
+                delegate: Rectangle {
+                    required property string modelData
+                    width: siteRow.implicitWidth + 20
+                    height: 32
+                    radius: Math.min(4, theme.radius)
+                    color: "#1d1f27"
+                    border.color: "#2c2f3a"
+
+                    Row {
+                        id: siteRow
+                        anchors.centerIn: parent
+                        spacing: 8
+                        Label {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData
+                            textFormat: Text.PlainText
+                        }
+                        Label {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\u00d7"
+                            color: removeHover.hovered ? "#ffffff" : "#8a8c99"
+                            font.pixelSize: 17
+                            HoverHandler { id: removeHover; cursorShape: Qt.PointingHandCursor }
+                            TapHandler { onTapped: config.removeSite(modelData) }
+                        }
+                    }
+                }
+            }
+        }
+
+        TextField {
+            id: siteField
+            Layout.fillWidth: true
+            placeholderText: qsTr("Add a website, like youtube.com, then Enter")
+            onAccepted: {
+                if (config.addSite(text)) text = ""
+                else siteError.visible = text.trim() !== ""
+            }
+            onTextChanged: siteError.visible = false
+        }
+
+        Label {
+            id: siteError
+            visible: false
+            color: "#ff8a80"
+            text: qsTr("That isn't a website, or it's already on the list.")
         }
 
         Rectangle { Layout.fillWidth: true; height: 1; color: "#262833" }
