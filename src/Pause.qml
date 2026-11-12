@@ -153,7 +153,8 @@ Window {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: parent.height * 0.07
+            // Just above the horizon, wherever it settled.
+            anchors.bottomMargin: parent.height * (root.level * 0.92 + 0.02) + 40
             opacity: root.choosing ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 900 } }
             text: qsTr("%n attempts to open %1 today", "", session.attempts).arg(session.appName)
