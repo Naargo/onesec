@@ -6,8 +6,10 @@
 -- then starts `onesec pause`, which covers the screen with the breathing
 -- exercise. When you choose, the pause calls back through hyprctl:
 -- onesec_release() brings the window back where it would have opened,
--- onesec_dismiss() closes it. Turning OneSec off brings back anything still
--- waiting, so a crashed pause never strands a window.
+-- onesec_dismiss() closes it. Turning OneSec on also holds back the windows
+-- of picked apps that are already open, behind one pause for all of them.
+-- Turning OneSec off brings back anything still waiting, so a crashed pause
+-- never strands a window.
 --
 -- Load it from ~/.config/hypr/hyprland.lua:
 --   pcall(dofile, "/usr/share/onesec/onesec.lua")
@@ -21,7 +23,7 @@ local PAUSE_TIMEOUT = 600
 
 -- Kept in a global so a config reload doesn't forget windows that are
 -- waiting or apps still inside their grace period.
-onesec_state = onesec_state or { held = {}, pausing = {}, grace = {}, settings = nil }
+onesec_state = onesec_state or { held = {}, pausing = {}, grace = {}, settings = nil, was_enabled = false }
 local S = onesec_state
 
 local function load_settings()
@@ -117,29 +119,71 @@ hl.on("window.open", function(window)
   hl.exec_cmd(shell_quote(S.settings.command) .. " pause " .. shell_quote(class))
 end)
 
--- Called by `onesec pause` through hyprctl. Each returns a no-op dispatcher,
--- because hyprctl dispatch expects one.
-function onesec_release(class)
-  S.grace[class] = os.time() + S.settings.grace
-  release(class)
+-- Called by `onesec pause` through hyprctl, with every class that pause
+-- answers for. Each returns a no-op dispatcher, because hyprctl dispatch
+-- expects one.
+function onesec_release(...)
+  for _, class in ipairs({ ... }) do
+    S.grace[class] = os.time() + S.settings.grace
+    release(class)
+  end
   return hl.dsp.no_op()
 end
 
-function onesec_dismiss(class)
-  for _, held in ipairs(S.held[class] or {}) do
-    if exists(held.address) then
-      hl.dispatch(hl.dsp.window.close({ window = "address:" .. held.address }))
+function onesec_dismiss(...)
+  for _, class in ipairs({ ... }) do
+    for _, held in ipairs(S.held[class] or {}) do
+      if exists(held.address) then
+        hl.dispatch(hl.dsp.window.close({ window = "address:" .. held.address }))
+      end
+    end
+    S.held[class] = nil
+    S.pausing[class] = nil
+  end
+  return hl.dsp.no_op()
+end
+
+-- When OneSec comes on, windows of picked apps that are already open get
+-- the same treatment as new ones: they move to the hidden workspace, and
+-- one pause answers for all of them. Windows tucked away on a special
+-- workspace (the scratchpad and the like) are left alone.
+local function hold_open_windows()
+  local watched = {}
+  for _, class in ipairs(S.settings.classes) do
+    watched[class] = true
+  end
+  local classes = {}
+  for _, window in ipairs(hl.get_windows()) do
+    local class = window.class
+    local workspace = window.workspace
+    if watched[class] and workspace and not workspace.special then
+      if not S.held[class] then
+        S.held[class] = {}
+        table.insert(classes, class)
+      end
+      table.insert(S.held[class], { address = window.address, workspace = tostring(workspace.id) })
+      hl.dispatch(hl.dsp.window.move({ workspace = HOLD, follow = false, window = "address:" .. window.address }))
     end
   end
-  S.held[class] = nil
-  S.pausing[class] = nil
-  return hl.dsp.no_op()
+  if #classes == 0 then
+    return
+  end
+  local quoted = {}
+  for _, class in ipairs(classes) do
+    S.pausing[class] = os.time()
+    table.insert(quoted, shell_quote(class))
+  end
+  hl.exec_cmd(shell_quote(S.settings.command) .. " pause --open " .. table.concat(quoted, " "))
 end
 
 -- Called by the OneSec app after every settings change.
 function onesec_sync()
   load_settings()
   sync_rule()
+  if S.settings.enabled and not S.was_enabled then
+    hold_open_windows()
+  end
+  S.was_enabled = S.settings.enabled
   if not S.settings.enabled then
     for class in pairs(S.held) do
       release(class)
@@ -150,4 +194,8 @@ function onesec_sync()
   return hl.dsp.no_op()
 end
 
+-- Loading the hook (Hyprland starting, or reloading its config) isn't
+-- OneSec being turned on, so it never holds back windows already open.
+load_settings()
+S.was_enabled = S.settings.enabled
 onesec_sync()

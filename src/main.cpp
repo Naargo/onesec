@@ -3,7 +3,8 @@
 //   onesec                 open the settings
 //   onesec toggle [on|off] turn OneSec on or off (Super + `)
 //   onesec status          print "on" or "off"
-//   onesec pause <class>   the pause, started by hypr/onesec.lua
+//   onesec pause [--open] <class>...
+//                          the pause, started by hypr/onesec.lua
 //   onesec preview         the pause as it will look, with nothing behind it
 
 #include <QCoreApplication>
@@ -27,7 +28,7 @@
 #include "theme.h"
 #include "translator.h"
 
-static const char *Version = "0.1.2";
+static const char *Version = "0.2.0";
 
 // App icons by the name in their .desktop file, from the icon theme, or by
 // path for the web apps that point at their own PNG. Qt's icon theme lookup
@@ -124,15 +125,14 @@ static void grabWhenAsked(QQuickWindow *window) {
     QTimer::singleShot(last + 100, qApp, &QCoreApplication::quit);
 }
 
-static int runPause(QGuiApplication &app, Translator &translator, const QString &windowClass, bool preview) {
+static int runPause(QGuiApplication &app, Translator &translator, QStringList windowClasses, Pause::Kind kind) {
     Theme theme;
     Config config;
-    QString shownClass = windowClass;
-    if (preview && shownClass.isEmpty()) {
+    if (kind == Pause::Preview && windowClasses.isEmpty()) {
         const auto classes = config.watchedClasses();
-        shownClass = classes.isEmpty() ? QString("YouTube") : classes.first();
+        windowClasses = {classes.isEmpty() ? QString("YouTube") : classes.first()};
     }
-    Pause pause(config, shownClass, preview);
+    Pause pause(config, windowClasses, kind);
 
     QQmlApplicationEngine engine;
     QObject::connect(&translator, &Translator::changed, &engine, &QQmlEngine::retranslate);
@@ -174,12 +174,22 @@ int main(int argc, char *argv[]) {
         fprintf(stdout, "onesec %s\n", Version);
         return 0;
     }
-    if (command == "pause" && argc < 3) {
-        fprintf(stderr, "usage: onesec pause <window-class>\n");
+    // onesec pause [--open] <class>...: --open when the windows were already
+    // open as OneSec came on, rather than opening just now.
+    QStringList classes;
+    bool alreadyOpen = false;
+    for (int i = 2; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--open") == 0)
+            alreadyOpen = true;
+        else
+            classes.append(QString::fromLocal8Bit(argv[i]));
+    }
+    if (command == "pause" && classes.isEmpty()) {
+        fprintf(stderr, "usage: onesec pause [--open] <window-class>...\n");
         return 1;
     }
     if (command != "open" && command != "pause" && command != "preview") {
-        fprintf(stderr, "usage: onesec [open | toggle [on|off] | status | pause <class> | preview]\n");
+        fprintf(stderr, "usage: onesec [open | toggle [on|off] | status | pause [--open] <class>... | preview]\n");
         return 1;
     }
 
@@ -197,7 +207,8 @@ int main(int argc, char *argv[]) {
     app.installTranslator(&translator);
 
     if (command == "pause" || command == "preview")
-        return runPause(app, translator, argc >= 3 ? QString::fromLocal8Bit(argv[2]) : QString(), command == "preview");
+        return runPause(app, translator, classes,
+                        command == "preview" ? Pause::Preview : alreadyOpen ? Pause::AlreadyOpen : Pause::Opening);
 
     useDesktopIconTheme();
     app.setWindowIcon(QIcon::fromTheme("onesec"));

@@ -98,10 +98,13 @@ private slots:
     void aPreviewDoesNotCount() {
         QTemporaryDir config, state;
         Config c(config.path(), state.path());
-        Pause preview(c, "YouTube", true);
+        Pause preview(c, {"YouTube"}, Pause::Preview);
         QCOMPARE(preview.attempts(), 1);
         QCOMPARE(c.attemptsToday("YouTube"), 0);
-        Pause real(c, "YouTube", false);
+        Pause open(c, {"YouTube"}, Pause::AlreadyOpen);
+        QVERIFY(open.alreadyOpen());
+        QCOMPARE(c.attemptsToday("YouTube"), 0);
+        Pause real(c, {"YouTube"}, Pause::Opening);
         QCOMPARE(real.attempts(), 1);
         QCOMPARE(c.attemptsToday("YouTube"), 1);
     }
@@ -109,11 +112,22 @@ private slots:
     void aPauseAnswersOnce() {
         QTemporaryDir config, state;
         Config c(config.path(), state.path());
-        Pause pause(c, "YouTube", false);
+        Pause pause(c, {"YouTube"}, Pause::Opening);
         QSignalSpy finished(&pause, &Pause::finished);
         pause.dontOpen();
         pause.continueToApp();
         QCOMPARE(finished.count(), 1);
+    }
+
+    void onePauseNamesEveryApp() {
+        QTemporaryDir config, state;
+        Config c(config.path(), state.path());
+        c.setWatched(app("YouTube", "YouTube", {"brave-youtube.com__-Default"}), true);
+        c.setWatched(app("Discord", "Discord", {"discord", "chrome-discord.com__-Default"}), true);
+        Pause pause(c, {"brave-youtube.com__-Default", "discord", "chrome-discord.com__-Default"}, Pause::AlreadyOpen);
+        QCOMPARE(pause.appName(), QString("YouTube and Discord"));
+        QCOMPARE(Pause::joinNames({"A", "B", "C"}), QString("A, B and C"));
+        QCOMPARE(Pause::joinNames({"A"}), QString("A"));
     }
 
     void desktopFilesBecomeApps() {

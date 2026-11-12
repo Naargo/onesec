@@ -2,7 +2,6 @@
     <qresource prefix="/">
         <file alias="Main.qml">Main.qml</file>
         <file alias="Pause.qml">Pause.qml</file>
-        <file alias="Horizon.qml">Horizon.qml</file>
         <file alias="ChoiceButton.qml">ChoiceButton.qml</file>
         <file alias="HelpOverlay.qml">HelpOverlay.qml</file>
         <file alias="i18n/en.json">i18n/en.json</file>

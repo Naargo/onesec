@@ -7,10 +7,11 @@ A breathing pause in front of the apps you pick, for
 which does this on phones.
 
 Turn it on with Super + ` when you want to stop yourself drifting into
-something. Open a picked app and its window stays hidden while a navy horizon
-rises and sinks with one slow breath. Then you choose: don't open it, and the
-window closes, or go on, and it appears where it would have opened. Turn
-OneSec off and everything opens right away again.
+something. Picked apps that are already open are hidden at once, and any you
+open later stay hidden while a navy sheet rises for ten seconds as you
+breathe in and sinks for ten as you breathe out. Then you choose: don't open
+it (or Esc), and its windows close, or go on, and they come back where they
+were. Turn OneSec off and everything opens right away again.
 
 Nothing runs in the background. A few lines in Hyprland's config hold the
 window back, and the pause is a small Qt program that only exists while it's
@@ -40,7 +41,7 @@ Open OneSec from the app launcher (Super + Space) to pick your apps.
 | `onesec toggle [on\|off]` | Turn OneSec on or off, with a notification |
 | `onesec status` | Print `on` or `off` |
 | `onesec preview` | Show the pause as it will look |
-| `onesec pause <class>` | The pause itself; the Hyprland hook starts it |
+| `onesec pause [--open] <class>...` | The pause itself; the Hyprland hook starts it |
 
 ## Shortcuts
 
@@ -49,7 +50,7 @@ Open OneSec from the app launcher (Super + Space) to pick your apps.
 | Anywhere | Super + ` | Turn OneSec on or off |
 | Pause | Enter / Space | Press the focused choice |
 | Pause | Tab / Up / Down | Move between the two choices |
-| Pause | Esc | Don't open the app, even mid-breath |
+| Pause | Esc | Don't open the app (or close it, if it was open), even mid-breath |
 | Settings | ? | Show every shortcut |
 | Settings | Ctrl + O | Turn OneSec on or off |
 | Settings | Ctrl + F | Search apps |
@@ -61,7 +62,8 @@ Open OneSec from the app launcher (Super + Space) to pick your apps.
 
 `hypr/onesec.lua` keeps a window rule that, while OneSec is on, sends new
 windows of your picked apps to a hidden workspace (`special:onesec`) from
-their first frame. When one lands there, the hook runs `onesec pause`, which
+their first frame. Turning OneSec on also moves the picked apps' open windows
+there, behind one pause for all of them. When one lands there, the hook runs `onesec pause`, which
 covers the screen with a layer-shell overlay above the bar. Your choice calls
 back into the hook through `hyprctl`. Turning OneSec off brings back any
 window still waiting, so a crashed pause never strands one.
