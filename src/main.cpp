@@ -28,7 +28,7 @@
 #include "theme.h"
 #include "translator.h"
 
-static const char *Version = "0.3.0";
+static const char *Version = "0.3.2";
 
 // App icons by the name in their .desktop file, from the icon theme, or by
 // path for the web apps that point at their own PNG. Qt's icon theme lookup

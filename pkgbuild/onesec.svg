@@ -1,7 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- OneSec: a circle half full, like the breathing sheet halfway up.
-       Monochrome: one dark disc, everything else white. -->
+  <!-- OneSec: an hourglass, the moment it asks for. Monochrome: a dark
+       disc, everything else white. -->
   <circle cx="32" cy="32" r="31" fill="#111216"/>
-  <circle cx="32" cy="32" r="19" fill="none" stroke="#ffffff" stroke-width="3.5"/>
-  <path d="M 13 32 L 51 32 A 19 19 0 0 1 13 32 Z" fill="#ffffff"/>
+  <g fill="#ffffff">
+    <rect x="19.5" y="13" width="25" height="3.2" rx="1.6"/>
+    <rect x="19.5" y="47.8" width="25" height="3.2" rx="1.6"/>
+    <!-- What's left at the top, and the pile it's falling into. -->
+    <path d="M26.2 21.5 H37.8 C36.9 25.4 34.2 27.9 32 28.9 C29.8 27.9 27.1 25.4 26.2 21.5 Z" opacity="0.55"/>
+    <path d="M25.4 47.8 C25.9 42.9 29 40 32 39.2 C35 40 38.1 42.9 38.6 47.8 Z"/>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round">
+    <path d="M23 16.2 C23 25.5 30 28.6 30 32 C30 35.4 23 38.5 23 47.8"/>
+    <path d="M41 16.2 C41 25.5 34 28.6 34 32 C34 35.4 41 38.5 41 47.8"/>
+    <path d="M32 31 V39" stroke-width="1.2"/>
+  </g>
 </svg>

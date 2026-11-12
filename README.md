@@ -31,12 +31,12 @@ pcall(dofile, "/usr/share/onesec/onesec.lua")
 hl.bind("SUPER + GRAVE", hl.dsp.exec_cmd("onesec toggle"))
 ```
 
-For the bar widget (a circle, empty while OneSec is off and half full while
-it's on; click to turn it on or off, right-click for the settings):
+For the bar widget (an hourglass, an outline while OneSec is off and solid
+while it's on; click to turn it on or off, right-click for the settings):
 
 ```sh
-ln -s /usr/share/onesec/plugin ~/.config/omarchy/plugins/onesec
-omarchy bar put tom.onesec --before omarchy.tray
+ln -s /usr/share/onesec/plugin ~/.config/omarchy/plugins/tom.onesec
+omarchy bar put tom.onesec --after omarchy.tray
 ```
 
 Open OneSec from the app launcher (Super + Space) to pick your apps.
@@ -85,6 +85,10 @@ for the hook to `~/.local/state/onesec/hypr.lua`.
 bin/build    # build/onesec
 bin/test     # the backend tests, offscreen
 ```
+
+The Omarchy shell keeps a plugin file it has loaded, even after
+`omarchy-shell shell rescanPlugins`, so an edit to `plugin/OneSecBar.qml`
+shows up only after `omarchy restart shell`.
 
 `ONESEC_GRAB="a.png@1500,b.png@11800" QT_QPA_PLATFORM=offscreen build/onesec preview`
 saves the pause at those moments without showing anything.

@@ -1,5 +1,5 @@
 pkgname=onesec
-pkgver=0.3.0
+pkgver=0.3.2
 pkgrel=1
 pkgdesc='A breathing pause in front of the apps you pick'
 arch=('x86_64' 'aarch64')
@@ -23,6 +23,6 @@ package() {
   # The Hyprland hook. Each user loads it from their hyprland.lua.
   install -Dm644 hypr/onesec.lua "$pkgdir/usr/share/onesec/onesec.lua"
   # The bar widget. Each user links it into ~/.config/omarchy/plugins.
-  install -Dm644 -t "$pkgdir/usr/share/onesec/plugin" plugin/manifest.json plugin/Widget.qml
+  install -Dm644 -t "$pkgdir/usr/share/onesec/plugin" plugin/manifest.json plugin/OneSecBar.qml
   install -Dm644 -t "$pkgdir/usr/share/onesec/plugin/i18n" plugin/i18n/en.json
 }

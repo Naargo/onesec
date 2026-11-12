@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "tom.onesec",
   "name": "OneSec",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "author": "Tom Finer",
   "license": "MIT",
   "description": "Turn OneSec's breathing pause on and off from the bar.",
@@ -10,7 +10,7 @@
     "bar-widget"
   ],
   "entryPoints": {
-    "barWidget": "Widget.qml"
+    "barWidget": "OneSecBar.qml"
   },
   "barWidget": {
     "displayName": "OneSec",
