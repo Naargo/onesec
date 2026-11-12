@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=OneSec
+Comment=A breathing pause in front of the apps you pick
+Exec=onesec
+Icon=onesec
+Terminal=false
+Categories=Utility;
+StartupWMClass=onesec
