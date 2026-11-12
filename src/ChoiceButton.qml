@@ -1,9 +1,10 @@
 import QtQuick
 
-// A button on the choice screen, as one sec has them: the way out is a pale
-// pill, and going on is plain text under it, so it takes a deliberate look.
-// Enter or Space presses whichever has focus, and focus shows as a ring or
-// an underline.
+// A button on the choice screen, laid out as one sec has them but with
+// corners that follow Hyprland's rounding (square by default): the way out
+// is a pale block, and going on is plain text under it, so it takes a
+// deliberate look. Enter or Space presses whichever has focus, and focus
+// shows as a ring or an underline.
 FocusScope {
     id: button
     property string text
@@ -17,17 +18,17 @@ FocusScope {
     Rectangle {
         visible: button.primary
         anchors.fill: parent
-        radius: height / 2
+        radius: Math.min(4, theme.radius)
         color: hover.hovered ? "#ffffff" : "#e8eeff"
         Behavior on color { ColorAnimation { duration: 150 } }
     }
 
-    // The focus ring sits outside the pill, so it shows against both.
+    // The focus ring sits outside the block, so it shows against both.
     Rectangle {
         visible: button.primary && button.activeFocus
         anchors.fill: parent
         anchors.margins: -6
-        radius: height / 2
+        radius: Math.min(4, theme.radius)
         color: "transparent"
         border.width: 2
         border.color: "#ffffff"

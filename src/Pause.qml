@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Window
 
 // The pause, drawn the way one sec draws it, in navy. A black screen asks
-// for a deep breath; a sheet with rounded top corners rises from the bottom
+// for a deep breath; a square-edged sheet rises from the bottom
 // while you breathe in until it covers everything, then sinks while you
 // breathe out. The last time it sinks it uncovers the choice underneath. It
 // covers the whole screen, above the bar, until you answer. Esc always gets
@@ -113,18 +113,16 @@ Window {
             }
         }
 
-        // The breath: a sheet rising from the bottom, flat-topped with rounded
-        // corners, slate blue fading down into navy. It runs past the bottom
-        // edge by its corner radius so only the top corners are round.
+        // The breath: a sheet rising from the bottom with a flat, square top,
+        // slate blue fading down into navy. Square like Omarchy's windows, not
+        // rounded like one sec's phone screen.
         Rectangle {
             id: sheet
-            readonly property real corner: 40
             x: 0
             width: parent.width
             y: parent.height * (1 - root.level)
-            height: parent.height * root.level + corner
+            height: parent.height * root.level
             visible: root.level > 0
-            radius: corner
             gradient: Gradient {
                 GradientStop { position: 0.0; color: "#8497c0" }
                 GradientStop { position: 1.0; color: "#25347a" }
