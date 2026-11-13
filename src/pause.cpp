@@ -2,6 +2,8 @@
 
 #include "config.h"
 
+#include <QStandardPaths>
+
 QString luaQuote(const QString &text) {
     QString escaped = text;
     escaped.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
@@ -29,10 +31,26 @@ Pause::Pause(Config &config, const QStringList &windowClasses, Kind kind, bool f
     }
     m_appName = joinNames(names);
 
+    if (forSites && !QStandardPaths::findExecutable("youlearn").isEmpty())
+        for (const auto &site : windowClasses)
+            if (isYouTube(site))
+                m_offerYouLearn = true;
+
     // Only a real open counts. A preview isn't one, and windows that were
     // already open when OneSec came on weren't opened just now.
     const auto first = windowClasses.value(0);
     m_attempts = kind == Opening ? config.recordAttempt(first) : config.attemptsToday(first) + 1;
+}
+
+bool Pause::isYouTube(const QString &site) {
+    for (const auto *domain : {"youtube.com", "youtu.be"})
+        if (site == domain || site.endsWith(QString(".") + domain))
+            return true;
+    return false;
+}
+
+void Pause::openYouLearn() {
+    finish("onesec_youlearn");
 }
 
 void Pause::continueToApp() {
@@ -48,7 +66,7 @@ void Pause::finish(const QString &function) {
         return;
     m_done = true;
     if (m_forSites) {
-        m_result = function == "onesec_dismiss" ? Stopped : 0;
+        m_result = function == "onesec_dismiss" ? Stopped : function == "onesec_youlearn" ? YouLearn : 0;
     } else if (m_kind != Preview) {
         QStringList arguments;
         for (const auto &windowClass : m_windowClasses)

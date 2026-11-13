@@ -9,23 +9,30 @@ FocusScope {
     id: button
     property string text
     property bool primary: false
+    // A second block, outlined rather than filled, for when there are two
+    // ways out (YouTube: YouLearn, or not at all).
+    property bool outline: false
     signal activated()
 
-    implicitWidth: label.implicitWidth + (primary ? 112 : 32)
-    implicitHeight: label.implicitHeight + (primary ? 36 : 16)
+    readonly property bool block: primary || outline
+    implicitWidth: label.implicitWidth + (block ? 112 : 32)
+    implicitHeight: label.implicitHeight + (block ? 36 : 16)
     activeFocusOnTab: true
 
     Rectangle {
-        visible: button.primary
+        visible: button.block
         anchors.fill: parent
         radius: Math.min(4, theme.radius)
-        color: hover.hovered ? "#ffffff" : "#e8eeff"
+        color: button.primary ? (hover.hovered ? "#ffffff" : "#e8eeff")
+                              : (hover.hovered ? "#24ffffff" : "transparent")
+        border.width: button.outline ? 2 : 0
+        border.color: "#e8eeff"
         Behavior on color { ColorAnimation { duration: 150 } }
     }
 
     // The focus ring sits outside the block, so it shows against both.
     Rectangle {
-        visible: button.primary && button.activeFocus
+        visible: button.block && button.activeFocus
         anchors.fill: parent
         anchors.margins: -6
         radius: Math.min(4, theme.radius)
@@ -39,10 +46,10 @@ FocusScope {
         anchors.centerIn: parent
         text: button.text
         color: button.primary ? "#13205a" : "#ffffff"
-        opacity: button.primary || hover.hovered || button.activeFocus ? 1 : 0.85
-        font.pixelSize: button.primary ? 19 : 16
-        font.weight: button.primary ? Font.DemiBold : Font.Medium
-        font.underline: !button.primary && button.activeFocus
+        opacity: button.block || hover.hovered || button.activeFocus ? 1 : 0.85
+        font.pixelSize: 19
+        font.weight: Font.Bold
+        font.underline: !button.block && button.activeFocus
     }
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }

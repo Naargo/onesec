@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OneSec",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "While OneSec is on, the websites you pick in OneSec open after a breathing pause.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmUUG7iyDlPV68zExF9rsgMylQqrrzWORrtPlgAfqbZmA9spG1447wtWstW9vznAnad5+trNUkD/D8N6a9QpxGFi1e5VQ+RByFSc2jNUnCG6fP6ePJnwBOFDNAMOYwjpR1/lIXDGxvX8ixjNb3BJh4k5wafuuE8vkf40Nv1/N1fUB3BQZgeOI2NJzBtAfWXssxDVqsABDBzpD0WKDnJt7fUU+ZQhz6Rejd7C/s6jAQDhqvEZ0p2iZObb23h/77fmKe7daDpEtLUtiCntV9xf3KUuXBrX25eoPsU5B1bcV8r1TydUtyeV191oD9JIpQ6oftEGzZOxH1gQoWWGqreUVCwIDAQAB",
   "icons": {

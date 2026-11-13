@@ -30,7 +30,7 @@
 #include "theme.h"
 #include "translator.h"
 
-static const char *Version = "0.4.0";
+static const char *Version = "0.5.0";
 
 // App icons by the name in their .desktop file, from the icon theme, or by
 // path for the web apps that point at their own PNG. Qt's icon theme lookup
@@ -84,8 +84,10 @@ static int toggle(int argc, char *argv[]) {
     config.setEnabled(on);
 
     if (!on) {
-        // A pause on screen right now has nothing left to guard.
-        QProcess::execute("pkill", {"-f", "^\\S*onesec pause "});
+        // An app pause on screen right now has nothing left to guard. Website
+        // pauses (--site) carry on: websites are paused whether OneSec is on
+        // or off.
+        QProcess::execute("pkill", {"-f", "^\\S*onesec pause (--open )?[^-]"});
     }
 
     if (!config.hookLoaded())

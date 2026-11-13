@@ -1,8 +1,9 @@
-// OneSec for websites. While OneSec is on, a tab heading to one of the
-// websites picked in OneSec is held on a blank page while OneSec's own
-// full-screen breathing pause runs, the same one apps get. Going on loads the
-// page; not going on closes the tab. Turning OneSec on also holds the tabs
-// already open on those websites, behind one pause for all of them.
+// OneSec for websites. A tab heading to one of the websites picked in
+// OneSec is held on a blank page while OneSec's own full-screen breathing
+// pause runs, the same one apps get. Going on loads the page; not going on
+// closes the tab. Unlike apps, websites are always paused, whether OneSec
+// is on or off: OneSec's switch is for breaks from apps, this checks in
+// every time.
 //
 // The helper on the laptop (onesec-host) keeps this worker up to date with
 // OneSec's settings and runs the pause when asked. If the helper isn't
@@ -12,7 +13,7 @@ const HOST = 'com.onesec.omarchy';
 const HOLD_PAGE = chrome.runtime.getURL('hold.html');
 
 let port = null;
-let settings = null; // { enabled, sites, graceMinutes } once the helper answers
+let settings = null; // { sites, graceMinutes } once the helper answers
 let nextId = 1;
 
 const grace = new Map();    // site -> time (ms) until which it opens without a pause
@@ -62,7 +63,7 @@ function holdUrl(site) {
 
 // Holds the tab and asks for a pause, or joins the pause already running for
 // that site.
-function hold(tabs, alreadyOpen) {
+function hold(tabs) {
   if (!port || tabs.length === 0) return;
   const fresh = [];
   for (const tab of tabs) {
@@ -77,7 +78,7 @@ function hold(tabs, alreadyOpen) {
   const sites = [...new Set(fresh.map((tab) => tab.site))];
   pauses.set(id, { sites, tabs: fresh });
   for (const site of sites) pausing.set(site, id);
-  port.postMessage({ type: 'pause', id, sites, open: alreadyOpen });
+  port.postMessage({ type: 'pause', id, sites });
 }
 
 function answer(id, go) {
@@ -98,30 +99,12 @@ function answer(id, go) {
   }
 }
 
-// When OneSec comes on, the tabs already open on its websites get the same
-// pause, all behind one.
-async function holdOpenTabs() {
-  const tabs = await chrome.tabs.query({});
-  const held = [];
-  for (const tab of tabs) {
-    const site = siteFor(tab.url);
-    if (site && !inGrace(site)) held.push({ tabId: tab.id, url: tab.url, site });
-  }
-  hold(held, true);
-}
-
 function onHostMessage(message) {
   if (message?.type === 'settings') {
-    const wasEnabled = settings?.enabled;
     settings = {
-      enabled: message.enabled === true,
       sites: Array.isArray(message.sites) ? message.sites.map(String) : [],
       graceMinutes: Number(message.graceMinutes) || 0,
     };
-    // Only a real switch from off to on, not the browser starting with
-    // OneSec already on.
-    if (settings.enabled && wasEnabled === false) holdOpenTabs();
-    if (!settings.enabled) grace.clear();
   } else if (message?.type === 'answer') {
     answer(message.id, message.go === true);
   }
@@ -130,10 +113,9 @@ function onHostMessage(message) {
 chrome.webNavigation.onBeforeNavigate.addListener((details) => {
   if (details.frameId !== 0) return;
   if (allowOnce.delete(details.tabId)) return;
-  if (!settings?.enabled) return;
   const site = siteFor(details.url);
   if (!site || inGrace(site)) return;
-  hold([{ tabId: details.tabId, url: details.url, site }], false);
+  hold([{ tabId: details.tabId, url: details.url, site }]);
 });
 
 // A held tab closed by hand no longer needs bringing back.

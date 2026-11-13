@@ -17,7 +17,7 @@ Window {
 
     // How much of the screen the sheet covers, from 0 to 1.
     property real level: 0
-    // Whether the choice is under the sheet yet, and whether it's showing.
+    // Whether the choice is showing (greyed out), and whether it can be picked.
     property bool revealed: false
     property bool choosing: false
 
@@ -45,11 +45,11 @@ Window {
         Component.onCompleted: { appear.start(); breathing.start() }
         NumberAnimation on opacity { id: appear; running: false; to: 1; duration: 400; easing.type: Easing.OutQuad }
 
-        // Before: black, and the words.
+        // The words, on black, the whole time. The background never changes.
         Text {
             anchors.centerIn: parent
+            anchors.verticalCenterOffset: -parent.height * 0.08
             width: Math.min(parent.width - 64, 640)
-            visible: !root.revealed
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
             // Trailing dots like one sec, unless the phrase already ends in some.
@@ -59,63 +59,9 @@ Window {
             font.weight: Font.Bold
         }
 
-        // After: the choice, on a navy gradient, uncovered by the last breath out.
-        Rectangle {
-            anchors.fill: parent
-            visible: root.revealed
-            gradient: Gradient {
-                GradientStop { position: 0.00; color: "#0b1442" }
-                GradientStop { position: 0.45; color: "#1a3590" }
-                GradientStop { position: 1.00; color: "#4a78de" }
-            }
-
-            // Small, and not the main part: how often today.
-            Text {
-                visible: !session.alreadyOpen
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: -parent.height * 0.08
-                width: Math.min(parent.width - 64, 560)
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.Wrap
-                text: qsTr("%n attempts to open %1 today", "", session.attempts).arg(session.appName)
-                color: "#d9e2ff"
-                font.pixelSize: 20
-            }
-
-            Column {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Math.max(48, parent.height * 0.09)
-                spacing: 20
-                opacity: root.choosing ? 1 : 0
-                visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutQuad } }
-
-                ChoiceButton {
-                    id: stayButton
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    primary: true
-                    text: session.alreadyOpen ? qsTr("I don't want %1 open").arg(session.appName)
-                                              : qsTr("I don't want to open %1").arg(session.appName)
-                    KeyNavigation.tab: goButton
-                    KeyNavigation.down: goButton
-                    onActivated: session.dontOpen()
-                }
-
-                ChoiceButton {
-                    id: goButton
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: qsTr("Continue to %1").arg(session.appName)
-                    KeyNavigation.tab: stayButton
-                    KeyNavigation.up: stayButton
-                    onActivated: session.continueToApp()
-                }
-            }
-        }
-
         // The breath: a sheet rising from the bottom with a flat, square top,
-        // slate blue fading down into navy. Square like Omarchy's windows, not
-        // rounded like one sec's phone screen.
+        // navy all the way down, a touch lighter at the top. Square like
+        // Omarchy's windows, not rounded like one sec's phone screen.
         Rectangle {
             id: sheet
             x: 0
@@ -124,8 +70,71 @@ Window {
             height: parent.height * root.level
             visible: root.level > 0
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#8497c0" }
-                GradientStop { position: 1.0; color: "#25347a" }
+                GradientStop { position: 0.0; color: "#1c2f6e" }
+                GradientStop { position: 1.0; color: "#08102e" }
+            }
+        }
+
+        // The choice, in the lower third, drawn over the sheet. It fades in
+        // greyed out halfway through the last breath out, and wakes up once
+        // the sheet is gone.
+        Item {
+            anchors.fill: parent
+
+            Column {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: parent.height * 2 / 3
+                spacing: 20
+                opacity: root.choosing ? 1 : (root.revealed ? 0.35 : 0)
+                visible: opacity > 0
+                enabled: root.choosing
+                Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutQuad } }
+
+                // Small, and not the main part: how often today.
+                Text {
+                    visible: !session.alreadyOpen
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: qsTr("%n attempts to open %1 today", "", session.attempts).arg(session.appName)
+                    color: "#d9e2ff"
+                    font.pixelSize: 19
+                    font.weight: Font.Bold
+                    bottomPadding: 8
+                }
+
+                // On YouTube, YouLearn is the way in worth taking, so it
+                // comes first and has the focus.
+                ChoiceButton {
+                    id: learnButton
+                    visible: session.offerYouLearn
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    primary: true
+                    text: qsTr("Open YouLearn instead")
+                    KeyNavigation.tab: stayButton
+                    KeyNavigation.down: stayButton
+                    onActivated: session.openYouLearn()
+                }
+
+                ChoiceButton {
+                    id: stayButton
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    primary: !session.offerYouLearn
+                    outline: session.offerYouLearn
+                    text: session.alreadyOpen ? qsTr("I don't want %1 open").arg(session.appName)
+                                              : qsTr("I don't want to open %1").arg(session.appName)
+                    KeyNavigation.tab: goButton
+                    KeyNavigation.down: goButton
+                    KeyNavigation.up: session.offerYouLearn ? learnButton : null
+                    onActivated: session.dontOpen()
+                }
+
+                ChoiceButton {
+                    id: goButton
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: qsTr("Continue to %1").arg(session.appName)
+                    KeyNavigation.tab: session.offerYouLearn ? learnButton : stayButton
+                    KeyNavigation.up: stayButton
+                    onActivated: session.continueToApp()
+                }
             }
         }
 
@@ -158,7 +167,8 @@ Window {
     function nextBreath() {
         if (breathsLeft <= 0) {
             choosing = true
-            stayButton.forceActiveFocus()
+            if (session.offerYouLearn) learnButton.forceActiveFocus()
+            else stayButton.forceActiveFocus()
             return
         }
         breathsLeft -= 1
@@ -168,10 +178,15 @@ Window {
     SequentialAnimation {
         id: breath
         NumberAnimation { target: root; property: "level"; to: 1; duration: root.inhaleMs; easing.type: Easing.InOutSine }
-        // Swapped while the sheet covers everything, so the last breath out
-        // uncovers the choice instead of the words.
-        ScriptAction { script: if (root.breathsLeft === 0) root.revealed = true }
-        NumberAnimation { target: root; property: "level"; to: 0; duration: root.exhaleMs; easing.type: Easing.InOutSine }
+        // On the last breath out, the choice fades in greyed out once the
+        // sheet is halfway down, before it's all the way gone.
+        ParallelAnimation {
+            NumberAnimation { target: root; property: "level"; to: 0; duration: root.exhaleMs; easing.type: Easing.InOutSine }
+            SequentialAnimation {
+                PauseAnimation { duration: root.exhaleMs / 2 }
+                ScriptAction { script: if (root.breathsLeft === 0) root.revealed = true }
+            }
+        }
         onFinished: root.nextBreath()
     }
 

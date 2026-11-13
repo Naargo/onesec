@@ -19,6 +19,7 @@ class Pause : public QObject {
     Q_PROPERTY(int attempts READ attempts CONSTANT)
     Q_PROPERTY(bool preview READ preview CONSTANT)
     Q_PROPERTY(bool alreadyOpen READ alreadyOpen CONSTANT)
+    Q_PROPERTY(bool offerYouLearn READ offerYouLearn CONSTANT)
 
 public:
     enum Kind { Opening, AlreadyOpen, Preview };
@@ -28,8 +29,10 @@ public:
     // (see result()) instead of going to Hyprland.
     Pause(Config &config, const QStringList &targets, Kind kind, bool forSites = false, QObject *parent = nullptr);
 
-    // For websites: 0 to go on, Stopped to close the tabs.
+    // For websites: 0 to go on, Stopped to close the tabs, YouLearn to close
+    // them and open YouLearn instead.
     static constexpr int Stopped = 3;
+    static constexpr int YouLearn = 4;
     int result() const { return m_result; }
 
     QString appName() const { return m_appName; }
@@ -39,7 +42,13 @@ public:
     bool preview() const { return m_kind == Preview; }
     bool alreadyOpen() const { return m_kind == AlreadyOpen; }
 
+    // YouTube's pause offers YouLearn, when it's installed, as the better
+    // way in: study instead of scroll.
+    bool offerYouLearn() const { return m_offerYouLearn; }
+    static bool isYouTube(const QString &site);
+
     Q_INVOKABLE void continueToApp();
+    Q_INVOKABLE void openYouLearn();
     Q_INVOKABLE void dontOpen();
 
     // "YouTube", "YouTube and Discord", "YouTube, Discord and X".
@@ -53,6 +62,7 @@ private:
 
     QStringList m_windowClasses;
     bool m_forSites = false;
+    bool m_offerYouLearn = false;
     int m_result = 0;
     QString m_appName;
     QString m_phrase;
